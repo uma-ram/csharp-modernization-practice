@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModernCSharp", "ModernCShar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodoApi", "TodoApi\TodoApi.csproj", "{16493D95-439B-45B6-987F-A26F78B58E06}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryAPI", "LibraryAPI\LibraryAPI.csproj", "{47FBC06E-A0FF-4C17-8905-6EB660F6128D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{16493D95-439B-45B6-987F-A26F78B58E06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16493D95-439B-45B6-987F-A26F78B58E06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16493D95-439B-45B6-987F-A26F78B58E06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47FBC06E-A0FF-4C17-8905-6EB660F6128D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47FBC06E-A0FF-4C17-8905-6EB660F6128D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47FBC06E-A0FF-4C17-8905-6EB660F6128D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47FBC06E-A0FF-4C17-8905-6EB660F6128D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
