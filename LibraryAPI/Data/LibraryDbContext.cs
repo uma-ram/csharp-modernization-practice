@@ -25,6 +25,7 @@ public class LibraryDbContext:DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.ISBN).IsUnique();
             entity.Property(e =>e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e =>e.isAvailable).HasDefaultValue(true);
         });
 
         //Member Configuration

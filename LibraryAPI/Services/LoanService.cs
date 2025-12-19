@@ -15,7 +15,36 @@ public class LoanService : ILoanService
         _context = context;
     }
 
-    public async Task<Loan> LoanBookAsync(LoanBookRequest loanBookRequest, CancellationToken cancellationToken = default)
+    //Helper method to map Loan to LoanResponse
+    private static LoanResponse MapToLoanResponse(Loan loan)
+    {
+        return new LoanResponse
+        {
+            Id = loan.Id,
+            BookId = loan.BookId,
+            MemberId = loan.MemberId,
+            LoanDate = loan.LoanDate,
+            DueDate = loan.DueDate,
+            ReturnDate = loan.ReturnDate,
+            IsOverdue = loan.IsOverdue,
+            Book = new BookSummary
+            {
+                Id = loan.Book.Id,
+                Title = loan.Book.Title,
+                Author = loan.Book.Author,
+                ISBN = loan.Book.ISBN,
+                IsAvailable = loan.Book.isAvailable
+            },
+            Member = new MemberSummary
+            {
+                Id = loan.Member.Id,
+                Name = loan.Member.Name,
+                Email = loan.Member.Email
+            }
+        };
+    }
+
+    public async Task<LoanResponse> LoanBookAsync(LoanBookRequest loanBookRequest, CancellationToken cancellationToken = default)
     {
         var book = await _context.Books.FindAsync(new object[] { loanBookRequest.BookId }, cancellationToken);
         if (book == null)
@@ -36,7 +65,7 @@ public class LoanService : ILoanService
             BookId = loanBookRequest.BookId,
             MemberId = loanBookRequest.MemberId,
             LoanDate = DateTime.UtcNow,
-            DueDate = DateTime.UtcNow.AddDays(loanBookRequest.DurationInDays)
+            DueDate = DateTime.UtcNow.AddDays(loanBookRequest.DurationInDays),
             Book = book,
             Member = member
         };
@@ -48,12 +77,13 @@ public class LoanService : ILoanService
         //await _context.Entry(loan).Reference(l => l.Book).LoadAsync(cancellationToken);
         //await _context.Entry(loan).Reference(l => l.Member).LoadAsync(cancellationToken);
 
-        return loan;
+        return MapToLoanResponse(loan);
     }
-    public async Task<Loan> ReturnBookAsync(int loanId, CancellationToken cancellationToken = default)
+    public async Task<LoanResponse> ReturnBookAsync(int loanId, CancellationToken cancellationToken = default)
     {
         var loan = await _context.Loans
             .Include(l => l.Book)
+            .Include(l => l.Member)
             .FirstOrDefaultAsync(l => l.Id == loanId, cancellationToken);
         if (loan == null)
         {
@@ -66,36 +96,40 @@ public class LoanService : ILoanService
         loan.ReturnDate = DateTime.UtcNow;
         loan.Book.isAvailable = true;
         await _context.SaveChangesAsync(cancellationToken);
-        return loan;
+        return MapToLoanResponse(loan);
 
     }
-    public async Task<List<Loan>> GetActiveLoansAsync(CancellationToken cancellationToken = default)
+    public async Task<List<LoanResponse>> GetActiveLoansAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.Loans
+        var loans= await _context.Loans
             .Include(l => l.Book)
             .Include(l => l.Member)
             .Where(l => l.ReturnDate == null)
             .OrderBy(l => l.DueDate)
             .ToListAsync(cancellationToken);
+        return loans.Select(MapToLoanResponse).ToList();
     }
 
-    public async Task<List<Loan>> GetMemberLoanHistoryAsync(int memberId, CancellationToken cancellationToken = default)
+    public async Task<List<LoanResponse>> GetMemberLoanHistoryAsync(int memberId, CancellationToken cancellationToken = default)
     {
-        return await _context.Loans
+        var loans = await _context.Loans
             .Include(l => l.Book)
+            .Include(l => l.Member)
             .Where(l => l.MemberId == memberId)
             .OrderByDescending(l => l.LoanDate)
             .ToListAsync(cancellationToken);
+        return loans.Select(MapToLoanResponse).ToList();
     }
 
-    public async Task<List<Loan>> GetOverdueLoansAsync(CancellationToken cancellationToken = default)
+    public async Task<List<LoanResponse>> GetOverdueLoansAsync(CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
-        return await _context.Loans
+        var loans = await _context.Loans
             .Include(l => l.Book)
             .Include(l => l.Member)
             .Where(l => l.ReturnDate == null && l.DueDate < now)
             .OrderBy(l => l.DueDate)
             .ToListAsync(cancellationToken);
+        return loans.Select(MapToLoanResponse).ToList();
     }
 }

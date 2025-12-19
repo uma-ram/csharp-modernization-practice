@@ -1,4 +1,6 @@
-﻿namespace LibraryAPI.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace LibraryAPI.Models;
 
 public class Loan
 {
@@ -17,5 +19,6 @@ public class Loan
     public Member Member { get; set; } = null!;
 
     // Computed Property
+    [JsonIgnore]  // Don't serialize this collection
     public bool IsOverdue => ReturnDate == null && DateTime.UtcNow > DueDate;
 }

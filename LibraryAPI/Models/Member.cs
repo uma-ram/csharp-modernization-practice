@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace LibraryAPI.Models;
 
@@ -18,6 +19,7 @@ public class Member
     public DateTime JoinedDate { get; set; }
 
     // Navigation Property
+    [JsonIgnore]  //  Don't serialize this collection
     public List<Loan> Loans { get; set; } = new();
 
 }

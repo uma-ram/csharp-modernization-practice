@@ -1,89 +1,90 @@
 ﻿namespace TodoApi.Services;
 
-using TodoApi.Models;
 using Microsoft.EntityFrameworkCore;
+using TodoApi.Data;
+using TodoApi.Models;
 
-public class TodoService: ITodoService
+public class TodoService : ITodoService
 {
-    private readonly TodoDBContext _context;
+    private readonly TodoDbContext _context;
+
     public TodoService(TodoDbContext context)
     {
         _context = context;
     }
 
-    public List<TodoItem> GetAll()
+    public async Task<List<TodoItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return _todos;
+        return await _context.Todos
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 
-    public TodoItem? GetById(int id)
+    public async Task<TodoItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return _todos.FirstOrDefault(t => t.Id == id);
+        return await _context.Todos
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
-    public TodoItem Create(TodoItem item)
+    public async Task<TodoItem> CreateAsync(TodoItem item, CancellationToken cancellationToken = default)
     {
-        item.Id = _nextId++;
         item.CreatedAt = DateTime.UtcNow;
-        _todos.Add(item);
+        _context.Todos.Add(item);
+        await _context.SaveChangesAsync(cancellationToken);
         return item;
     }
 
-    public TodoItem? Update(int id, TodoItem item)
+    public async Task<TodoItem?> UpdateAsync(int id, TodoItem item, CancellationToken cancellationToken = default)
     {
-        var existing = GetById(id);
+        var existing = await GetByIdAsync(id, cancellationToken);
         if (existing == null) return null;
 
         existing.Title = item.Title;
+        existing.Description = item.Description;
         existing.IsCompleted = item.IsCompleted;
+
+        if (item.IsCompleted && existing.CompletedAt == null)
+        {
+            existing.CompletedAt = DateTime.UtcNow;
+        }
+        else if (!item.IsCompleted)
+        {
+            existing.CompletedAt = null;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
         return existing;
     }
-    public bool Delete(int id)
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var item = GetById(id);
+        var item = await GetByIdAsync(id, cancellationToken);
         if (item == null) return false;
 
-        _todos.Remove(item);
+        _context.Todos.Remove(item);
+        await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    public Task<List<TodoItem>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<int> GetCountAsync(CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await _context.Todos.CountAsync(cancellationToken);
     }
 
-    public Task<TodoItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<List<TodoItem>> GetCompletedAsync(CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await _context.Todos
+            .Where(t => t.IsCompleted)
+            .OrderByDescending(t => t.CompletedAt)
+            .ToListAsync(cancellationToken);
     }
 
-    public Task<TodoItem> CreateAsync(TodoItem newTodo, CancellationToken cancellationToken = default)
+    public async Task<List<TodoItem>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
-    }
-
-    public Task<TodoItem> UpdateAsync(int id, TodoItem updatedTodo, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> GetCountAsync(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<TodoItem>> GetCompletedAsync(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<TodoItem>> SearchAsync(string query, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
+        return await _context.Todos
+            .Where(t => t.Title.Contains(query) ||
+                       (t.Description != null && t.Description.Contains(query)))
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 }

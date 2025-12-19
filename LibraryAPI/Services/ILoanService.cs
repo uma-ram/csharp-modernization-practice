@@ -5,10 +5,10 @@ using LibraryAPI.Models.DTO;
 
 public interface ILoanService
 {
-    Task<Loan> LoanBookAsync(LoanBookRequest loanBookRequest, CancellationToken cancellationToken = default);
-    Task<Loan> ReturnBookAsync(int loanId, CancellationToken cancellationToken = default);
-    Task<List<Loan>> GetActiveLoansAsync(CancellationToken cancellationToken = default);
-    Task<List<Loan>> GetMemberLoanHistoryAsync(int memberId, CancellationToken cancellationToken = default);
+    Task<LoanResponse> LoanBookAsync(LoanBookRequest loanBookRequest, CancellationToken cancellationToken = default);
+    Task<LoanResponse> ReturnBookAsync(int loanId, CancellationToken cancellationToken = default);
+    Task<List<LoanResponse>> GetActiveLoansAsync(CancellationToken cancellationToken = default);
+    Task<List<LoanResponse>> GetMemberLoanHistoryAsync(int memberId, CancellationToken cancellationToken = default);
 
-    Task<List<Loan>> GetOverdueLoansAsync(CancellationToken cancellationToken = default);
+    Task<List<LoanResponse>> GetOverdueLoansAsync(CancellationToken cancellationToken = default);
 }

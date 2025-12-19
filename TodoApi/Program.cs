@@ -1,20 +1,28 @@
-using TodoApi.Services;
+using Microsoft.EntityFrameworkCore;
+using TodoApi.Data;
 using TodoApi.Models;
-using TodoApi.Extensions;   
+using TodoApi.Services;
+using TodoApi.Extensions;
+using TodoApi.Middleware;
+using TodoApi.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add database
+builder.Services.AddDbContext<TodoDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<ITodoService, TodoService>();
-
+builder.Services.AddScoped<ITodoService, TodoService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Add global exception handler
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
+// Configure middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -23,55 +31,122 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-//Define Endpoints
-app.MapGet("/api/todos", (ITodoService service) =>
+// GET /api/todos - Get all todos
+app.MapGet("/api/todos", async (ITodoService service, CancellationToken cancellationToken) =>
 {
-    return Results.Ok(service.GetAll());    
+    var todos = await service.GetAllAsync(cancellationToken);
+    return Results.Ok(todos);
 })
 .WithName("GetAllTodos");
 
-//GET /api/todos/{id} - Get todo bt id
-app.MapGet("/api/todos/{id}", (int id, ITodoService service) =>
+// GET /api/todos/{id} - Get todo by id
+app.MapGet("/api/todos/{id}", async (int id, ITodoService service, CancellationToken cancellationToken) =>
 {
-    var todo = service.GetById(id);
-    return todo is not null ? Results.Ok(todo) : Results.NotFound();
+    var todo = await service.GetByIdAsync(id, cancellationToken);
+
+    if (todo == null)
+    {
+        throw new TodoNotFoundException(id);
+    }
+
+    return Results.Ok(todo);
 })
 .WithName("GetTodoById");
 
-
-//POST /api/todos - Create new todo
-app.MapPost("/api/todos", (CreateTodoRequest newTodo, ITodoService service) =>
+// POST /api/todos - Create new todo
+app.MapPost("/api/todos", async (CreateTodoRequest request, ITodoService service, CancellationToken cancellationToken) =>
 {
-    var(isValid, errors) = newTodo.Validate();
+    var (isValid, errors) = request.Validate();
+
     if (!isValid)
     {
-        return Results.BadRequest(new { Errors = errors });
+        throw new ValidationException(errors);
     }
+
     var item = new TodoItem
     {
-        Title = newTodo.Title,
+        Title = request.Title,
+        Description = request.Description,
         IsCompleted = false
     };
-    var createdTodo = service.Create(item);
-    return Results.Created($"/api/todos/{createdTodo.Id}", createdTodo);
+
+    var created = await service.CreateAsync(item, cancellationToken);
+    return Results.Created($"/api/todos/{created.Id}", created);
 })
 .WithName("CreateTodo");
 
-//PUT /api/todos/{id} - Update existing todo
-app.MapPut("/api/todos/{id}", (int id, TodoItem updatedTodo, ITodoService service) =>
+// PUT /api/todos/{id} - Update todo
+app.MapPut("/api/todos/{id}", async (int id, TodoItem item, ITodoService service, CancellationToken cancellationToken) =>
 {
-    var todo = service.Update(id, updatedTodo);
-    return todo is not null ? Results.Ok(todo) : Results.NotFound();
+    var updated = await service.UpdateAsync(id, item, cancellationToken);
+
+    if (updated == null)
+    {
+        throw new TodoNotFoundException(id);
+    }
+
+    return Results.Ok(updated);
 })
 .WithName("UpdateTodo");
 
-
-//DELETE /api/todos/{id} - Delete todo by id
-app.MapDelete("/api/todos/{id}", (int id, ITodoService service) =>
+// DELETE /api/todos/{id} - Delete todo
+app.MapDelete("/api/todos/{id}", async (int id, ITodoService service, CancellationToken cancellationToken) =>
 {
-    var deleted = service.Delete(id);
-    return deleted ? Results.NoContent() : Results.NotFound();
+    var deleted = await service.DeleteAsync(id, cancellationToken);
+
+    if (!deleted)
+    {
+        throw new TodoNotFoundException(id);
+    }
+
+    return Results.NoContent();
 })
 .WithName("DeleteTodo");
+
+// GET /api/todos/completed - Get completed todos
+app.MapGet("/api/todos/completed", async (ITodoService service, CancellationToken cancellationToken) =>
+{
+    var todos = await service.GetCompletedAsync(cancellationToken);
+    return Results.Ok(todos);
+})
+.WithName("GetCompletedTodos");
+
+// GET /api/todos/search?query=... - Search todos
+app.MapGet("/api/todos/search", async (string query, ITodoService service, CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(query))
+    {
+        return Results.BadRequest(new { message = "Query parameter is required" });
+    }
+
+    var todos = await service.SearchAsync(query, cancellationToken);
+    return Results.Ok(todos);
+})
+.WithName("SearchTodos");
+
+// GET /api/todos/stats - Get statistics
+app.MapGet("/api/todos/stats", async (ITodoService service, CancellationToken cancellationToken) =>
+{
+    var allTask = service.GetAllAsync(cancellationToken);
+    var countTask = service.GetCountAsync(cancellationToken);
+    var completedTask = service.GetCompletedAsync(cancellationToken);
+
+    await Task.WhenAll(allTask, countTask, completedTask);
+
+    var all = await allTask;
+    var total = await countTask;
+    var completed = await completedTask;
+
+    var stats = new
+    {
+        total,
+        completed = completed.Count,
+        pending = total - completed.Count,
+        completionRate = total > 0 ? (double)completed.Count / total * 100 : 0
+    };
+
+    return Results.Ok(stats);
+})
+.WithName("GetStats");
 
 app.Run();

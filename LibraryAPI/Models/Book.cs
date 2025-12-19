@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace LibraryAPI.Models;
 
@@ -23,10 +24,11 @@ public class Book
 
     public bool isAvailable { get; set; } = true;
 
-    public DateTime CreatedAt { get; set; } 
+    public DateTime CreatedAt { get; set; }
 
     //Navigation Property
 
+    [JsonIgnore]  //  Don't serialize this collection
     public List<Loan> Loans { get; set; } = new List<Loan>();
 
 }

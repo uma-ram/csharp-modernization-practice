@@ -47,6 +47,7 @@ public class MemberService : IMemberService
     public async Task<Member?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.Members.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+    }
 
     public async  Task<Member?> UpdateAsync(int id, CreateMemberRequest updateMemberRequest, CancellationToken cancellationToken = default)
     {
