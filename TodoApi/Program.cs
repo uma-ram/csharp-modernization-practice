@@ -5,12 +5,22 @@ using TodoApi.Services;
 using TodoApi.Extensions;
 using TodoApi.Middleware;
 using TodoApi.Exceptions;
+// Add this using directive to fix CS1061
+using Microsoft.EntityFrameworkCore.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add database
-builder.Services.AddDbContext<TodoDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDbContext<TodoDbContext>(options =>
+        options.UseInMemoryDatabase("TodoDb"));
+}
+else
+{
+    builder.Services.AddDbContext<TodoDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // Add services
 builder.Services.AddEndpointsApiExplorer();
