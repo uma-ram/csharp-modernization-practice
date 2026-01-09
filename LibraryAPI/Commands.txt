@@ -1,0 +1,21 @@
+https://learn.microsoft.com/en-us/dotnet/core/docker/introduction
+https://docs.docker.com/get-started/
+
+Docker Commands for TodoApi
+- docker build -t todoapi:latest .
+- docker stop todoapi_container || true
+- docker rm todoapi_container || true
+- docker run -d -p 5000:8080 --name todoapi_container -e ASPNETCORE_ENVIRONMENT=Development todoapi:latest
+
+Docker Commands for Library-API
+
+- docker build -t library-api:v1 .
+- docker stop library-container || true
+- docker rm library-container || true
+- docker run -d -p 5001:8080 --name library-container -e ASPNETCORE_ENVIRONMENT=Development library-api:v1
+
+Migration Commands for Library-API
+
+Add-migration InitialCreate 
+Update-Database
+Remove-Migration

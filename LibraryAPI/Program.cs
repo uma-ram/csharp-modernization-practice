@@ -8,10 +8,17 @@ using LibraryAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Add database
-builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+// Use In-Memory DB in Development, SQL Server in Production
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDbContext<LibraryDbContext>(options =>
+        options.UseInMemoryDatabase("LibraryDb"));
+}
+else
+{
+    builder.Services.AddDbContext<LibraryDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 // Add services to the container.
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
@@ -41,7 +48,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // ==================== BOOK ENDPOINTS ====================
 app.MapGet("/api/books", async (IBookService service, CancellationToken ct) =>
