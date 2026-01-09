@@ -1,0 +1,12 @@
+Code Coverage (Bonus)
+See how much of your code is tested:
+bash# Install coverage tool
+dotnet tool install --global dotnet-reportgenerator-globaltool
+
+# Run tests with coverage
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+
+# Generate report
+reportgenerator -reports:coverage.opencover.xml -targetdir:coverage -reporttypes:Html
+
+# Open coverage/index.html in browser
