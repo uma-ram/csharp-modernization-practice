@@ -1,4 +1,4 @@
-namespace TodoApi.Tests
+namespace LibraryAPI.Tests
 {
     public class UnitTest1
     {
