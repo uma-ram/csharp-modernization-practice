@@ -160,3 +160,6 @@ app.MapGet("/api/todos/stats", async (ITodoService service, CancellationToken ca
 .WithName("GetStats");
 
 app.Run();
+
+// Make the implicit Program class public for testing
+public partial class Program { }
